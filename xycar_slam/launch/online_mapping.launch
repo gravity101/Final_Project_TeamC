@@ -1,0 +1,19 @@
+<launch>
+  <param name="/use_sim_time" value="false" />
+  <param name="robot_description" textfile="$(find xycar_slam)/urdf/xycar.urdf" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <include file="$(find xycar_lidar)/launch/lidar_noviewer.launch" />
+  <include file="$(find xycar_imu)/launch/xycar_imu_9dof_noviewer.launch" />
+
+
+
+  <node name="cn" pkg="cartographer_ros" type="cartographer_node" args="
+     -configuration_directory $(find xycar_slam)/config
+     -configuration_basename mapping.lua" />
+  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros" type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
+  
+    <node name="rviz" pkg="rviz" type="rviz" args=" -d $(find xycar_slam)/rviz/online_mapping.rviz" />
+</launch>
+
+
