@@ -3,111 +3,76 @@
 
 import numpy as np
 import cv2
-"""
-vid = cv2.VideoCapture('final0826.avi')
 
-while True:
-    ret, frame = vid.read()
-    if not ret:
-        break
-    if ret:
-        cv2.imshow('video', frame)
-        roi = frame[:120, 160:480]
-        cv2.imshow('roi', roi)
-
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        cv2.imshow('hsv', hsv)
-
-
-    if cv2.waitKey(33) & 0xFF == ord('q'):
-        break
-
-vid.release()
-cv2.destroyAllWindows()
-"""
-
-def color_detect(hsv, arr1, arr2):
-	lower = np.array(arr1)
-	upper = np.array(arr2)
-	mask = cv2.inRange(hsv, lower, upper)
-	return mask
-"""
-img = cv2.imread('Green.JPG')
-img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
-roi = img[:120, 160:400]
-gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-gray = cv2.GaussianBlur(gray, (3, 3), 0)
-edge = cv2.Canny(gray, 75, 200)
-while True:
-	cv2.imshow('canny', edge)
-
-	edge, cnts, _ = cv2.findContours(edge, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-	cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:5]
-
-	for c in cnts:
-		peri = cv2.arcLength(c, True)
-		approx = cv2.approxPolyDP(c, 0.02*peri, True)
-
-		if len(approx) == 4:
-			screenCnt = approx
-			break
-	cv2.drawContours(roi, [screenCnt], -1, (0, 255, 0), 2)
-	cv2.imshow('Outline', roi)
-
-	if cv2.waitKey(33) & 0xFF == ord('q'):
-		break
-"""
-
+# 이미지 읽기
 img = cv2.imread('Yellow.JPG')
 img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
 
+# ROI 및 HSV 전처리
 roi = img[:120, 160:400]
-#cv2.imshow('roi', roi)
-
 hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-#cv2.imshow('hsv', hsv)
 h, s, v = cv2.split(hsv)
-roi_cpy = v.copy()
-#cv2.imshow('v', v)
-
 range_L = cv2.inRange(v, 220, 255)
-#cv2.imshow('Light', range_L)
 
+# 신호 부분 원으로 표시
 circles = cv2.HoughCircles(range_L, cv2.HOUGH_GRADIENT, 1, 100, param1=250, param2=10, minRadius=10, maxRadius=30)
-
-print(circles)
-
 if circles is not None:
 	i = circles[0][0]
 	cv2.circle(roi, (i[0], i[1]), i[2], (0, 0, 255), 5)
 
-#cv2.imshow("result", roi)
-#cv2.imshow("after", range_L)
+# 원의 중심 표시
+circle_x = circles[0][0][0]
+circle_y = circles[0][0][1]
+cv2.circle(roi, (circle_x, circle_y), 2, (0, 0, 0), 5)
 
-ret, thr = cv2.threshold(roi_cpy, 180, 255, 0)
-#cv2.imshow("thr", thr)
+# threshold 후 윤곽선 찾기
+ret, thr = cv2.threshold(v, 180, 255, 0)
 _, contours, _ = cv2.findContours(thr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-#cv2.drawContours(roi, contours, -1, (0, 255, 0), 1)
-#cv2.imshow('contour', roi)
-
 cnts = sorted(contours, key = cv2.contourArea, reverse = True)
 
 for c in cnts:
 	peri = cv2.arcLength(c, True)
 	approx = cv2.approxPolyDP(c, 0.02*peri, True)
-	cnt_width = max(approx[0][0][0], approx[1][0][0], approx[2][0][0], approx[3][0][0]) - min(approx[0][0][0], approx[1][0][0], approx[2][0][0], approx[3][0][0])
-	cnt_height = max(approx[0][0][1], approx[1][0][1], approx[2][0][1], approx[3][0][1]) - min(approx[0][0][1], approx[1][0][1], approx[2][0][1], approx[3][0][1])
-	
+
+	if len(approx) == 4:
+		cnt_width_max = max(approx[0][0][0], approx[1][0][0], approx[2][0][0], approx[3][0][0])
+		cnt_width_min = min(approx[0][0][0], approx[1][0][0], approx[2][0][0], approx[3][0][0])
+		cnt_height_max = max(approx[0][0][1], approx[1][0][1], approx[2][0][1], approx[3][0][1])
+		cnt_height_min = min(approx[0][0][1], approx[1][0][1], approx[2][0][1], approx[3][0][1])
+		cnt_width = cnt_width_max - cnt_width_min
+		cnt_height = cnt_height_max - cnt_height_min
+
+	# 사각형 표시
 	if len(approx) == 4 and cnt_width < 120 and cnt_width > 80:
 		screenCnt = approx
-		break
 		print(approx)
-
 		cv2.drawContours(roi, [screenCnt], -1, (0, 255, 0), 2)
-cv2.imshow('Outline', roi)
 
-print(len(cnts))
+		# 사각형의 중심 표시
+		moment = cv2.moments(c)
+		rect_x = int(moment['m10']/moment['m00'])
+		rect_y = int(moment['m01']/moment['m00'])
+		cv2.circle(roi, (rect_x, rect_y), 2, (0, 0, 0), 5)
+
+		if circle_x < cnt_width_min:
+			print("Outside")
+		elif circle_x > cnt_width_max:
+			print("Outside")
+		elif circle_y < cnt_height_min:
+			print("Outside")
+		elif circle_y > cnt_height_max:
+			print("Outside")
+		elif circle_x < cnt_width_min + cnt_width_min/3:
+			print("Red")
+		elif circle_x > cnt_width_max - cnt_width_max/3:
+			print("Green")
+		else:
+			print("Yellow")
+
+		break
+
+
+cv2.imshow('Outline', roi)
 
 cv2.waitKey(0)
 
