@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="xycar_imu" type="9dof_imu_node.py" name="xycar_imu" output="screen">
+    <param name="rviz_mode" type="string" value="false" />
+  </node>
+  <node pkg="bump" type="roll_pitch_yaw.py" name="Imu_Print" output="screen" />
+</launch>
+

@@ -1,0 +1,23 @@
+<launch>
+  <include file="$(find xycar_motor)/launch/xycar_motor.launch" />
+  <include file="$(find xycar_lidar)/launch/lidar_noviewer.launch" />
+  <include file="$(find xycar_imu)/launch/xycar_imu_9dof_noviewer.launch" />
+
+
+  <param name="robot_description" textfile="$(find xycar_slam)/urdf/xycar.urdf" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  
+  <node name="cartographer_node" pkg="cartographer_ros" type="cartographer_node" args="
+    -configuration_directory $(find xycar_slam)/config 
+    -configuration_basename localization_3.lua
+    -load_state_filename $(find xycar_slam)/maps/final_0903.pbstream" />
+
+  <node name="stanley_control" pkg="xycar_slam" type="stanley_follwer.py" output="screen" />
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find xycar_slam)/rviz/xycar_mapping.rviz" />
+  <node name="xycar_position_check" pkg="xycar_slam" type="sub_pose.py" />
+  
+</launch>
+
+
