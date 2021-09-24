@@ -1,8 +1,0 @@
-prefix=/home/srko/catkin_ws/install
-
-Name: xycar_slam
-Description: Description of xycar_slam
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

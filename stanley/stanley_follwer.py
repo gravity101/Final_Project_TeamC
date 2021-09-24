@@ -90,7 +90,7 @@ class StanleyController(object):
       elif delta > 21.155:
         delta = 21.155
 
-      angle = int(delta * 50 / 21.1549)
+      angle = int(delta * 50 / 21.1 549)
       
       if angle <-50:
         angle=-50
