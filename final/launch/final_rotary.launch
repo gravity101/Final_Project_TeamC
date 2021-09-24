@@ -1,0 +1,59 @@
+<launch>
+  <include file="$(find xycar_motor)/launch/xycar_motor.launch" />
+  <include file="$(find xycar_lidar)/launch/lidar_noviewer.launch" />
+  <include file="$(find xycar_imu)/launch/xycar_imu_9dof_noviewer.launch" />
+
+
+  <param name="robot_description" textfile="$(find xycar_slam)/urdf/xycar.urdf" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <!--node name="ar_parking" pkg="final" type="T_parking.py" /-->
+
+
+<!-- SLAM 카토그래퍼 -->
+  <node name="cartographer_node" pkg="cartographer_ros" type="cartographer_node" args="
+    -configuration_directory $(find xycar_slam)/config 
+    -configuration_basename localization_3.lua
+    -load_state_filename $(find xycar_slam)/maps/final_0903.pbstream" />
+
+
+<!-- 카메라 -->
+  <node name="usb_cam" output="screen" pkg="usb_cam" type="usb_cam_node">
+    <param name="video_device" value="/dev/videoCAM" />
+    <param name="autoexposure" value="false" />
+    <param name="exposure" value="40" />
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap" />
+  </node>
+
+
+  <!-- darknet_ros -->
+  <arg name="yolo_weights_path" default="$(find darknet_ros)/yolo_network_config/weights"/>
+  <arg name="yolo_config_path" default="$(find darknet_ros)/yolo_network_config/cfg"/>
+  <arg name="ros_param_file" default="$(find darknet_ros)/config/ros.yaml"/>
+  <arg name="network_param_file" default="$(find darknet_ros)/config/yolov2-voc.yaml"/>
+  <rosparam command="load" ns="darknet_ros" file="$(arg ros_param_file)"/>
+  <rosparam command="load" ns="darknet_ros" file="$(arg network_param_file)"/>
+  <arg name="launch_prefix" default=""/>
+  <!-- rosparam command="load" ns="darknet_ros" file="$(find darknet_ros)/config/ros.yaml" /-->
+  <!-- rosparam command="load" ns="darknet_ros" file="$(find darknet_ros)/config/yolov2-tiny.yaml" /-->
+
+  <node pkg="darknet_ros" type="darknet_ros" name="darknet_ros" launch-prefix="$(arg launch_prefix)">
+    <param name="weights_path" value="$(arg yolo_weights_path)" />
+    <param name="config_path" value="$(arg yolo_config_path)" />
+    <remap from="/camera/rgb/image_raw" to="/usb_cam/image_raw"/>
+    <!-- param name="weights_path" value="$(find darknet_ros)/yolo_network_config/weights" /-->
+    <!-- param name="config_path" value="$(find darknet_ros)/yolo_network_config/cfg" /-->
+  </node>
+
+
+  <node name="stanley_control" pkg="final" type="main_rotary.py" output="screen" />
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find xycar_slam)/rviz/xycar_mapping.rviz" />
+  <node name="xycar_position_check" pkg="xycar_slam" type="sub_pose.py" />
+  
+</launch>
+
+
